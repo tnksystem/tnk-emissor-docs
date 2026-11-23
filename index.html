@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TNK Emissor — guia de integração</title>
+<meta name="description" content="Como o ERP do parceiro emite NF-e pelo TNK Emissor: rotas, campos, retorno e homologação.">
+<meta property="og:title" content="TNK Emissor — guia de integração">
+<meta property="og:description" content="Emissão de NF-e pelo TNK Emissor: rotas, campos, retorno e homologação.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="icone.png">
+<style>
+  /* As cores e o cabeçalho são os do mobile.tnksystem.com.br. */
+  :root{
+    --primary:#00AEEF; --primary-dark:#0097D1;
+    --accent:#0A2744; --accent-dark:#061729;
+    --bg:#F5F7FA; --surface:#FFFFFF; --border:#E2E8F0; --soft:#F1F5F9;
+    --text:#1E293B; --text-2:#64748B; --text-3:#94A3B8;
+    --get:#0097D1; --get-bg:rgba(0,174,239,.12);
+    --post:#15803D; --post-bg:rgba(22,163,74,.12);
+    --put:#B45309; --put-bg:rgba(217,119,6,.14);
+    --code-bg:#0A2744; --code-text:#E2E8F0;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth; scroll-padding-top:16px}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:"Segoe UI",Roboto,-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+    line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px; margin:0 auto; padding:0 20px}
+
+  header{
+    background:linear-gradient(160deg,var(--accent) 0%,var(--accent-dark) 100%);
+    color:#fff; padding:40px 0 64px; text-align:center;
+  }
+  header img.logo{height:88px; width:auto; margin-bottom:16px}
+  header h1{margin:0; font-size:30px; letter-spacing:-.4px; font-weight:700}
+  header p{margin:8px 0 0; color:#B9CBDC; font-size:16px}
+
+  .grade{display:grid; grid-template-columns:260px minmax(0,1fr); gap:28px; margin-top:-36px; align-items:start}
+
+  nav.sumario{
+    position:sticky; top:16px; max-height:calc(100vh - 32px); overflow:auto;
+    background:var(--surface); border:1px solid var(--border); border-radius:20px;
+    box-shadow:0 12px 32px rgba(10,39,68,.10); padding:18px 14px;
+  }
+  nav.sumario summary{font-weight:700; font-size:14px; color:var(--accent); cursor:pointer; list-style:none; padding:0 8px 8px}
+  nav.sumario summary::-webkit-details-marker{display:none}
+  nav.sumario summary::after{content:"BE"; float:right; color:var(--text-3)}
+  nav.sumario details:not([open]) summary::after{content:"B8"}
+  nav.sumario ul{list-style:none; margin:0; padding:0}
+  nav.sumario li a{
+    display:block; padding:5px 8px; border-radius:8px; font-size:14px;
+    color:var(--text-2); text-decoration:none;
+  }
+  nav.sumario li.nivel-2 a{font-weight:600; color:var(--text); margin-top:4px}
+  nav.sumario li.nivel-3 a{padding-left:20px; font-size:13px}
+  nav.sumario li a:hover{background:var(--soft); color:var(--text)}
+  nav.sumario li a.ativo{background:rgba(0,174,239,.12); color:var(--primary-dark)}
+
+  article{
+    background:var(--surface); border:1px solid var(--border); border-radius:20px;
+    box-shadow:0 12px 32px rgba(10,39,68,.10); padding:36px 40px; min-width:0;
+  }
+  .badge{
+    display:inline-block; background:rgba(0,174,239,.12); color:var(--primary-dark);
+    font-size:13px; font-weight:600; padding:5px 14px; border-radius:999px; margin-bottom:6px;
+  }
+  article h2{
+    font-size:22px; color:var(--accent); margin:44px 0 14px; padding-top:28px;
+    border-top:1px solid var(--border); letter-spacing:-.2px;
+  }
+  article h2:first-of-type{margin-top:18px}
+  article h3{font-size:17px; margin:30px 0 10px; color:var(--text)}
+  article p, article li{font-size:15px; color:var(--text)}
+  article ul{padding-left:22px}
+  article ul li{margin-bottom:6px}
+  article b{color:var(--accent)}
+
+  code{
+    font-family:Consolas,"Cascadia Mono","SF Mono",Menlo,monospace; font-size:.88em;
+    background:rgba(0,174,239,.10); color:var(--accent); padding:1px 6px; border-radius:6px;
+    overflow-wrap:anywhere;
+  }
+  .codigo{position:relative; margin:14px 0 20px}
+  .codigo pre{
+    margin:0; background:var(--code-bg); color:var(--code-text); border-radius:14px;
+    padding:18px 20px; overflow-x:auto; font-size:13px; line-height:1.55;
+  }
+  .codigo pre code{background:none; color:inherit; padding:0; font-size:inherit; overflow-wrap:normal}
+  .copiar{
+    position:absolute; top:10px; right:10px; border:1px solid rgba(255,255,255,.25);
+    background:rgba(255,255,255,.08); color:#fff; font:600 12px/1 inherit;
+    padding:6px 10px; border-radius:8px; cursor:pointer;
+  }
+  .copiar:hover{background:rgba(255,255,255,.18)}
+
+  .tabela{overflow-x:auto; margin:12px 0 20px; border:1px solid var(--border); border-radius:14px}
+  table{border-collapse:collapse; width:100%; font-size:14px}
+  th{background:var(--soft); text-align:left; font-weight:600; color:var(--text); white-space:nowrap}
+  th, td{padding:10px 14px; border-bottom:1px solid var(--border); vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td{color:var(--text-2)}
+  td:first-child{color:var(--text)}
+  td code{white-space:nowrap}
+  td code.longo{white-space:normal}
+
+  .metodo{display:inline-block; font:700 12px/1 Consolas,monospace; padding:5px 8px; border-radius:6px; min-width:44px; text-align:center}
+  .metodo.get{background:var(--get-bg); color:var(--get)}
+  .metodo.post{background:var(--post-bg); color:var(--post)}
+  .metodo.put{background:var(--put-bg); color:var(--put)}
+
+  ol.passos{margin:0 0 18px; padding:0; list-style:none; counter-reset:s}
+  ol.passos li{counter-increment:s; position:relative; padding:0 0 0 46px; margin-bottom:16px; color:var(--text-2)}
+  ol.passos li::before{
+    content:counter(s); position:absolute; left:0; top:-1px;
+    width:30px; height:30px; border-radius:50%; background:var(--accent); color:#fff;
+    font-size:14px; font-weight:600; display:flex; align-items:center; justify-content:center;
+  }
+
+  footer{
+    border-top:1px solid var(--border); margin-top:48px; padding:26px 0 40px;
+    text-align:center; font-size:13px; color:var(--text-3);
+  }
+  footer a{color:var(--text-2)}
+
+  @media (max-width:900px){
+    .grade{grid-template-columns:minmax(0,1fr); gap:16px}
+    nav.sumario{position:static; max-height:none}
+    nav.sumario:not([open]){padding-bottom:10px}
+  }
+  @media (max-width:600px){
+    .wrap{padding:0 16px}
+    header{padding:32px 0 56px}
+    header img.logo{height:70px}
+    header h1{font-size:24px}
+    article{padding:24px 18px; border-radius:16px}
+    article h2{font-size:20px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <img class="logo" src="logo.png" alt="TNK System">
+    <h1>TNK Emissor</h1>
+    <p>Emissão de NF-e para o ERP do parceiro — guia de integração</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="grade">
+    <nav class="sumario" aria-label="Nesta página">
+      <details open id="sumario">
+        <summary>Nesta página</summary>
+        <ul><li class="nivel-2"><a href="#visao-geral">Visão geral</a></li><li class="nivel-2"><a href="#acesso-e-seguranca">Acesso e segurança</a></li><li class="nivel-2"><a href="#rotas">Rotas</a></li><li class="nivel-2"><a href="#envio-da-nota-campo-a-campo">Envio da nota: campo a campo</a></li><li class="nivel-3"><a href="#cabecalho">Cabeçalho</a></li><li class="nivel-3"><a href="#emitente-emitente">Emitente (emitente)</a></li><li class="nivel-3"><a href="#destinatario-destinatario">Destinatário (destinatario)</a></li><li class="nivel-3"><a href="#itens-itens-de-1-a-990">Itens (itens, de 1 a 990)</a></li><li class="nivel-3"><a href="#icms-do-item-icms">ICMS do item (icms)</a></li><li class="nivel-3"><a href="#ibs-cbs-do-item-ibs-cbs-so-regime-normal">IBS/CBS do item (ibs_cbs, só Regime Normal)</a></li><li class="nivel-3"><a href="#transporte-transporte-opcional">Transporte (transporte, opcional)</a></li><li class="nivel-3"><a href="#cobranca-duplicatas-opcional">Cobrança (duplicatas, opcional)</a></li><li class="nivel-3"><a href="#pagamentos-pagamentos">Pagamentos (pagamentos)</a></li><li class="nivel-3"><a href="#totais-para-conferencia-totais">Totais para conferência (totais)</a></li><li class="nivel-3"><a href="#o-que-esta-versao-ainda-nao-faz">O que esta versão ainda não faz</a></li><li class="nivel-2"><a href="#comercio-exterior-importacao-e-exportacao">Comércio exterior (importação e exportação)</a></li><li class="nivel-3"><a href="#destinatario-no-exterior-destinatario-estrangeiro">Destinatário no exterior (destinatario.estrangeiro)</a></li><li class="nivel-3"><a href="#importacao-cfop-3xxx">Importação (CFOP 3xxx)</a></li><li class="nivel-3"><a href="#exportacao-cfop-7xxx">Exportação (CFOP 7xxx)</a></li><li class="nivel-3"><a href="#exemplo-destinatario-e-item-de-importacao">Exemplo: destinatário e item de importação</a></li><li class="nivel-3"><a href="#exemplo-item-e-bloco-de-exportacao">Exemplo: item e bloco de exportação</a></li><li class="nivel-2"><a href="#exemplo-de-envio">Exemplo de envio</a></li><li class="nivel-2"><a href="#retorno">Retorno</a></li><li class="nivel-3"><a href="#o-que-fazer-em-cada-situacao">O que fazer em cada situação</a></li><li class="nivel-3"><a href="#codigos-http">Códigos HTTP</a></li><li class="nivel-3"><a href="#exemplo-autorizada-200">Exemplo: autorizada (200)</a></li><li class="nivel-3"><a href="#exemplo-rejeitada-pela-sefaz-200">Exemplo: rejeitada pela SEFAZ (200)</a></li><li class="nivel-3"><a href="#exemplo-erro-de-preenchimento-422">Exemplo: erro de preenchimento (422)</a></li><li class="nivel-2"><a href="#depois-da-emissao-consulta-correcao-cancelamento-e-inutilizacao">Depois da emissão: consulta, correção, cancelamento e inutilização</a></li><li class="nivel-2"><a href="#homologacao-e-rejeicoes-comuns">Homologação e rejeições comuns</a></li><li class="nivel-3"><a href="#rejeicoes-mais-comuns">Rejeições mais comuns</a></li></ul>
+      </details>
+    </nav>
+    <article>
+      <span class="badge">API de emissão de NF-e TNK — guia de integração</span>
+      <h2 id="visao-geral">Visão geral</h2>
+<p>O seu ERP manda a nota em JSON e recebe a resposta da SEFAZ na mesma chamada. A TNK monta o XML, assina com o certificado A1 do emitente, envia à SEFAZ e guarda o XML autorizado.</p>
+<ul><li><b>Documento:</b> só NF-e, modelo 55 (venda, devolução, remessa, etc.). NFC-e não faz parte desta versão.</li><li><b>Impostos:</b> o seu ERP calcula e manda prontos (CST/CSOSN, base, alíquota e valor de cada imposto, por item). A TNK confere as somas e o formato, mas não recalcula a tributação.</li><li><b>Numeração:</b> o seu ERP dá a série (0 a 889) e o número de cada nota. A TNK só confere que o número está livre e monta a chave com ele. Homologação e produção dividem a numeração de cada série: depois de estar em produção, faça testes em outra série.</li><li><b>Emitente:</b> os dados do emitente (razão social, IE, CRT, endereço) vão em toda nota, no grupo emitente, e atualizam o cadastro na TNK. O CNPJ precisa ser o da chave de acesso usada.</li><li><b>Certificado A1:</b> o seu ERP envia o .pfx de cada CNPJ uma vez, pelo <code>PUT /certificado</code>, e de novo quando renovar. A TNK guarda cifrado; nem o arquivo nem a senha voltam em resposta alguma.</li><li><b>Ambiente:</b> cada nota diz se vai para <code>homologacao</code> (sem valor fiscal) ou <code>producao</code>.</li><li><b>Formato:</b> JSON em UTF-8. Valores com ponto decimal (<code>10.50</code>), datas no formato ISO 8601 (<code>2026-11-23T14:30:00-03:00</code>), documentos só com números ou letras, sem pontos, barras ou traços.</li></ul>
+<h2 id="acesso-e-seguranca">Acesso e segurança</h2>
+<p>Cada CNPJ emitente tem uma chave de acesso própria, que vai no cabeçalho de toda chamada:</p>
+<div class="codigo"><button type="button" class="copiar">Copiar</button><pre><code>Authorization: Bearer &lt;chave de acesso&gt;
+Content-Type: application/json</code></pre></div>
+<ul><li><b>Endereço:</b> o TNK Emissor fica instalado no servidor do seu cliente, e o seu ERP chama pela rede local: <code>http://&lt;servidor&gt;:8020/integracao/v1</code>. A TNK informa o endereço exato na instalação. A porta só abre para os computadores da rede local do cliente: de fora ela não responde. <code>GET /integracao/v1/saude</code> responde sem chave e serve só para saber se o Emissor está ligado.</li><li><b>A chave é entregue uma vez só.</b> A TNK não consegue lê-la de novo depois. Se perder ou suspeitar de vazamento, peça uma nova: a antiga é desligada na hora.</li><li><b>Guarde a chave só no servidor do seu ERP</b>, nunca no navegador, no aplicativo do cliente, em log ou em repositório de código. A chamada é de servidor para servidor.</li><li><b>Uma chave só enxerga as notas do próprio CNPJ.</b> Nota de outro CNPJ responde como não encontrada.</li><li><b>Limites:</b> até 990 itens por nota (limite da SEFAZ) e um número máximo de chamadas por minuto, informado junto com a chave. Muitas tentativas com chave errada bloqueiam o endereço de origem por um tempo.</li><li><b>Homologação primeiro:</b> cada CNPJ começa mandando notas com ambiente homologacao (sem valor fiscal). Só mande producao depois de passar no roteiro de testes do fim deste documento.</li><li><b>Erros internos</b> voltam só com uma mensagem curta e um <code>id_ocorrencia</code>. Informe esse número à TNK para a investigação.</li></ul>
+<h2 id="rotas">Rotas</h2>
+<p>Todas começam com <code>/integracao/v1</code>. Onde aparece <code>{ref}</code>, use o seu <code>id_integracao</code> ou a chave de 44 dígitos da nota.</p>
+<div class="tabela"><table><thead><tr><th>Método</th><th>Caminho</th><th>O que faz</th></tr></thead><tbody><tr><td><span class="metodo post">POST</span></td><td><code>/notas</code></td><td>Emite a nota e devolve o retorno da SEFAZ</td></tr><tr><td><span class="metodo put">PUT</span></td><td><code>/notas/{ref}</code></td><td>Reenvia uma nota <b>rejeitada</b>, com os dados corrigidos (mesmo número)</td></tr><tr><td><span class="metodo get">GET</span></td><td><code>/notas/{ref}</code></td><td>Situação da nota. Com <code>?atualizar=1</code>, pergunta de novo à SEFAZ</td></tr><tr><td><span class="metodo get">GET</span></td><td><code>/notas/{ref}/xml</code></td><td>XML autorizado (procNFe)</td></tr><tr><td><span class="metodo get">GET</span></td><td><code>/notas/{ref}/danfe</code></td><td>DANFE em PDF</td></tr><tr><td><span class="metodo post">POST</span></td><td><code>/notas/{ref}/cancelar</code></td><td>Cancela a nota autorizada</td></tr><tr><td><span class="metodo post">POST</span></td><td><code>/notas/{ref}/carta-de-correcao</code></td><td>Registra uma carta de correção</td></tr><tr><td><span class="metodo post">POST</span></td><td><code>/notas/{ref}/inutilizar</code></td><td>Inutiliza o número de uma nota rejeitada que não vai ser corrigida</td></tr><tr><td><span class="metodo post">POST</span></td><td><code>/inutilizar</code></td><td>Inutiliza uma faixa de números que o seu ERP pulou e nunca enviou</td></tr><tr><td><span class="metodo put">PUT</span></td><td><code>/certificado</code></td><td>Envia (ou troca) o certificado A1 do CNPJ da chave</td></tr><tr><td><span class="metodo get">GET</span></td><td><code>/status</code></td><td>SEFAZ no ar e validade do certificado. Obrigatório: ?ambiente=homologacao ou ?ambiente=producao</td></tr></tbody></table></div>
+<h2 id="envio-da-nota-campo-a-campo">Envio da nota: campo a campo</h2>
+<p>O corpo do <code>POST /notas</code> é dividido nos blocos abaixo. Campo desconhecido é recusado (para pegar erro de digitação). Valores em reais com até 2 casas, quantidade e valor unitário com até 4, percentuais com até 4. <b>Obr.</b> = obrigatório; <b>Cond.</b> = obrigatório só no caso descrito.</p>
+<h3 id="cabecalho">Cabeçalho</h3>
+<div class="tabela"><table><thead><tr><th>Campo</th><th>Obr.</th><th>Formato</th><th>Para que serve / exemplo</th></tr></thead><tbody><tr><td><code>id_integracao</code></td><td>Sim</td><td>até 60: letras, números e . _ - /</td><td>Identificador único da nota no seu ERP (ex.: número do pedido). Reenviar o mesmo id devolve a mesma nota, sem emitir outra</td></tr><tr><td><code>ambiente</code></td><td>Sim</td><td><code>homologacao</code> ou <code>producao</code></td><td>Para qual SEFAZ a nota vai. Em homologação ela não tem valor fiscal</td></tr><tr><td><code>serie</code></td><td>Sim</td><td>número de 0 a 889</td><td>Série da nota, controlada pelo seu ERP. Ex.: 1</td></tr><tr><td><code>numero</code></td><td>Sim</td><td>número de 1 a 999999999</td><td>Número da nota, controlado pelo seu ERP. Número já usado nesta série (em qualquer ambiente) volta 409</td></tr><tr><td><code>emitente</code></td><td>Sim</td><td>objeto</td><td>Quem emite: ver a tabela Emitente, logo abaixo</td></tr><tr><td><code>natureza_operacao</code></td><td>Sim</td><td>texto, até 60</td><td><code>Venda de mercadoria</code></td></tr><tr><td><code>tipo_operacao</code></td><td>Sim</td><td><code>0</code> ou <code>1</code></td><td>0 = entrada, 1 = saída</td></tr><tr><td><code>finalidade</code></td><td>Sim</td><td><code>1</code> a <code>4</code></td><td>1 = normal, 2 = complementar, 3 = ajuste, 4 = devolução</td></tr><tr><td><code>consumidor_final</code></td><td>Sim</td><td>true/false</td><td>true quando o comprador é consumidor final</td></tr><tr><td><code>data_emissao</code></td><td>Não</td><td>data e hora ISO</td><td>Se omitido, é o momento do envio</td></tr><tr><td><code>chave_referenciada</code></td><td>Cond.</td><td>44 dígitos</td><td>Chave da nota original. Obrigatória na devolução e na complementar</td></tr><tr><td><code>informacoes_complementares</code></td><td>Não</td><td>texto, até 5000</td><td>Sai no campo de informações complementares do DANFE</td></tr></tbody></table></div>
+<h3 id="emitente-emitente">Emitente (<code>emitente</code>)</h3>
+<p>Vai em toda nota e atualiza o cadastro do emitente na TNK. O CNPJ precisa ser o da chave de acesso.</p>
+<div class="tabela"><table><thead><tr><th>Campo</th><th>Obr.</th><th>Formato</th><th>Para que serve / exemplo</th></tr></thead><tbody><tr><td><code>cnpj</code></td><td>Sim</td><td>14 caracteres</td><td>CNPJ do emitente, o mesmo da chave e do certificado</td></tr><tr><td><code>razao_social</code></td><td>Sim</td><td>texto, 2 a 60</td><td><code>LOJA EXEMPLO LTDA</code></td></tr><tr><td><code>nome_fantasia</code></td><td>Não</td><td>texto, até 60</td><td><code>Loja Exemplo</code></td></tr><tr><td><code>inscricao_estadual</code></td><td>Sim</td><td>2 a 14 dígitos</td><td>IE do emitente, só números</td></tr><tr><td><code>inscricao_municipal</code></td><td>Não</td><td>até 15 dígitos</td><td></td></tr><tr><td><code>crt</code></td><td>Sim</td><td><code>1</code> ou <code>3</code></td><td>1 = Simples Nacional (ICMS vai em <code>csosn</code>), 3 = Regime Normal (ICMS vai em <code>cst</code>)</td></tr><tr><td><code>logradouro</code></td><td>Sim</td><td>texto, 2 a 60</td><td><code>Rua Sinimbu</code></td></tr><tr><td><code>numero</code></td><td>Não</td><td>texto, até 60</td><td><code>1234</code></td></tr><tr><td><code>complemento</code></td><td>Não</td><td>texto, até 60</td><td><code>Sala 2</code></td></tr><tr><td><code>bairro</code></td><td>Sim</td><td>texto, 2 a 60</td><td><code>Centro</code></td></tr><tr><td><code>codigo_municipio_ibge</code></td><td>Sim</td><td>7 dígitos</td><td><code>4305108</code></td></tr><tr><td><code>municipio</code></td><td>Sim</td><td>texto, 2 a 60</td><td><code>Caxias do Sul</code></td></tr><tr><td><code>uf</code></td><td>Sim</td><td>2 letras</td><td><code>RS</code>. Define a SEFAZ que atende a nota</td></tr><tr><td><code>cep</code></td><td>Não</td><td>8 dígitos</td><td><code>95010000</code></td></tr><tr><td><code>telefone</code></td><td>Não</td><td>até 14 dígitos</td><td><code>5432221234</code></td></tr></tbody></table></div>
+<h3 id="destinatario-destinatario">Destinatário (<code>destinatario</code>)</h3>
+<div class="tabela"><table><thead><tr><th>Campo</th><th>Obr.</th><th>Formato</th><th>Observação</th></tr></thead><tbody><tr><td><code>cpf_cnpj</code></td><td>Cond.</td><td>11 ou 14 caracteres</td><td>No Brasil, com dígito verificador conferido. Fora do país vai <code>estrangeiro</code> no lugar (ver Comércio exterior)</td></tr><tr><td><code>nome</code></td><td>Sim</td><td>texto, até 60</td><td>Razão social ou nome</td></tr><tr><td><code>contribuinte_icms</code></td><td>Sim</td><td><code>1</code>, <code>2</code> ou <code>9</code></td><td>1 = contribuinte, 2 = isento, 9 = não contribuinte</td></tr><tr><td><code>inscricao_estadual</code></td><td>Cond.</td><td>só números</td><td>Obrigatória quando <code>contribuinte_icms</code> = 1. Não mande nos outros casos</td></tr><tr><td><code>logradouro</code></td><td>Sim</td><td>texto, até 60</td><td></td></tr><tr><td><code>numero</code></td><td>Não</td><td>texto, até 60</td><td>Vazio sai como <code>SN</code></td></tr><tr><td><code>complemento</code></td><td>Não</td><td>texto, até 60</td><td></td></tr><tr><td><code>bairro</code></td><td>Cond.</td><td>texto, até 60</td><td>Obrigatório no Brasil; opcional no estrangeiro</td></tr><tr><td><code>codigo_municipio_ibge</code></td><td>Cond.</td><td>7 dígitos</td><td>Ex.: <code>2408102</code> (Natal)</td></tr><tr><td><code>municipio</code></td><td>Cond.</td><td>texto, até 60</td><td>Obrigatório no Brasil; não mande no estrangeiro</td></tr><tr><td><code>uf</code></td><td>Cond.</td><td>2 letras</td><td>Obrigatória no Brasil (define se a operação é interna ou interestadual); não mande no estrangeiro</td></tr><tr><td><code>cep</code></td><td>Não</td><td>8 dígitos</td><td></td></tr><tr><td><code>telefone</code></td><td>Não</td><td>só números</td><td></td></tr><tr><td><code>email</code></td><td>Não</td><td>até 60</td><td>A SEFAZ não envia o XML; quem envia é o seu ERP</td></tr></tbody></table></div>
+<p>O código do município também é obrigatório só no Brasil. No estrangeiro não mande <code>codigo_municipio_ibge</code>, <code>municipio</code>, <code>uf</code> nem <code>cep</code>: veja <b>Comércio exterior</b>, mais abaixo.</p>
+<h3 id="itens-itens-de-1-a-990">Itens (<code>itens</code>, de 1 a 990)</h3>
+<div class="tabela"><table><thead><tr><th>Campo</th><th>Obr.</th><th>Formato</th><th>Observação</th></tr></thead><tbody><tr><td><code>codigo</code></td><td>Sim</td><td>texto, até 60</td><td>Código do produto no seu ERP</td></tr><tr><td><code>descricao</code></td><td>Sim</td><td>texto, até 120</td><td></td></tr><tr><td><code>codigo_barras</code></td><td>Não</td><td>GTIN 8, 12, 13 ou 14</td><td>Sem código de barras, omita (sai <code>SEM GTIN</code>)</td></tr><tr><td><code>ncm</code></td><td>Sim</td><td>8 dígitos</td><td></td></tr><tr><td><code>cest</code></td><td>Cond.</td><td>7 dígitos</td><td>Obrigatório para produto sujeito a ST</td></tr><tr><td><code>cfop</code></td><td>Sim</td><td>4 dígitos</td><td>Ex.: <code>5102</code>, <code>6102</code>, <code>5202</code></td></tr><tr><td><code>unidade</code></td><td>Sim</td><td>até 6</td><td><code>UN</code>, <code>KG</code>, <code>CX</code>...</td></tr><tr><td><code>quantidade</code></td><td>Sim</td><td>até 4 casas</td><td></td></tr><tr><td><code>valor_unitario</code></td><td>Sim</td><td>até 4 casas</td><td></td></tr><tr><td><code>valor_produto</code></td><td>Sim</td><td>2 casas</td><td>quantidade × valor unitário. Conferido com tolerância de R$ 0,01</td></tr><tr><td><code>desconto</code>, <code>frete</code>, <code>seguro</code>, <code>outras</code></td><td>Não</td><td>2 casas</td><td>Valor <b>deste item</b> (rateie o frete da nota entre os itens)</td></tr><tr><td><code>origem</code></td><td>Sim</td><td><code>0</code> a <code>8</code></td><td>Origem da mercadoria (0 = nacional)</td></tr><tr><td><code>informacao_adicional</code></td><td>Não</td><td>texto, até 500</td><td>Sai embaixo do item no DANFE</td></tr><tr><td><code>icms</code></td><td>Sim</td><td>bloco</td><td>Ver tabela de ICMS</td></tr><tr><td><code>pis</code>, <code>cofins</code></td><td>Sim</td><td>bloco</td><td><code>cst</code>, <code>aliquota</code>, <code>valor</code></td></tr><tr><td><code>ipi</code></td><td>Não</td><td>bloco</td><td><code>cst</code>, <code>aliquota</code>, <code>valor</code>. Omita se o item não tem IPI</td></tr><tr><td><code>ibs_cbs</code></td><td>Não</td><td>bloco</td><td>Só Regime Normal. Ver tabela de IBS/CBS</td></tr><tr><td><code>devolucao</code></td><td>Cond.</td><td>bloco</td><td>Na devolução com IPI: <code>percentual_devolvido</code> e <code>valor_ipi_devolvido</code></td></tr></tbody></table></div>
+<h3 id="icms-do-item-icms">ICMS do item (<code>icms</code>)</h3>
+<p>Mande <b><code>cst</code></b> se o emitente é do Regime Normal ou <b><code>csosn</code></b> se é do Simples Nacional, nunca os dois.</p>
+<div class="tabela"><table><thead><tr><th>Campo</th><th>Quando mandar</th></tr></thead><tbody><tr><td><code>cst</code></td><td>Regime Normal. Aceitos: <code>00</code>, <code>20</code>, <code>40</code>, <code>41</code>, <code>50</code>, <code>60</code>, <code>90</code></td></tr><tr><td><code>csosn</code></td><td>Simples Nacional. Aceitos: <code>102</code>, <code>103</code>, <code>300</code>, <code>400</code>, <code>500</code>, <code>900</code></td></tr><tr><td><code>base</code>, <code>aliquota</code>, <code>valor</code></td><td>CST 00 e 20 (no 20, a base já reduzida); CST 90 e CSOSN 900 quando houver ICMS destacado</td></tr><tr><td><code>modalidade_bc_st</code>, <code>base_st</code>, <code>aliquota_st</code>, <code>valor_st</code></td><td>CST 90 e CSOSN 900 com ST destacada</td></tr><tr><td><code>base_fcp_st</code>, <code>aliquota_fcp_st</code>, <code>valor_fcp_st</code></td><td>Junto com a ST, quando houver FCP</td></tr><tr><td><code>cst 60 ou csosn 500</code></td><td>Só o código. A ST cobrada antes (retida) não é informada nesta versão</td></tr></tbody></table></div>
+<p>A base de PIS, COFINS e IPI é o valor do item menos o desconto, e é a TNK que coloca no XML. A modalidade da base do ICMS próprio é sempre “valor da operação”.</p>
+<h3 id="ibs-cbs-do-item-ibs-cbs-so-regime-normal">IBS/CBS do item (<code>ibs_cbs</code>, só Regime Normal)</h3>
+<div class="tabela"><table><thead><tr><th>Campo</th><th>Observação</th></tr></thead><tbody><tr><td><code>cst</code></td><td>CST do IBS/CBS (ex.: <code>000</code>)</td></tr><tr><td><code>classificacao_tributaria</code></td><td>cClassTrib, 6 dígitos</td></tr><tr><td><code>base</code></td><td>Base de cálculo</td></tr><tr><td><code>aliquota_ibs_uf</code>, <code>valor_ibs_uf</code></td><td>IBS estadual</td></tr><tr><td><code>aliquota_ibs_municipio</code>, <code>valor_ibs_municipio</code></td><td>IBS municipal</td></tr><tr><td><code>aliquota_cbs</code>, <code>valor_cbs</code></td><td>CBS</td></tr><tr><td><code>reducao_ibs</code>, <code>reducao_cbs</code></td><td>Percentual de redução, só no CST de alíquota reduzida</td></tr></tbody></table></div>
+<h3 id="transporte-transporte-opcional">Transporte (<code>transporte</code>, opcional)</h3>
+<div class="tabela"><table><thead><tr><th>Campo</th><th>Observação</th></tr></thead><tbody><tr><td><code>modalidade_frete</code></td><td>0 = emitente, 1 = destinatário, 2 = terceiros, 9 = sem frete. Omitido = 9</td></tr><tr><td><code>transportadora</code></td><td><code>cpf_cnpj</code>, <code>nome</code>, <code>contribuinte_icms</code>, <code>inscricao_estadual</code>, <code>logradouro</code>, <code>numero</code>, <code>municipio</code>, <code>uf</code></td></tr><tr><td><code>volumes</code></td><td><code>quantidade</code>, <code>especie</code>, <code>peso_liquido</code> e <code>peso_bruto</code> (kg, 3 casas)</td></tr></tbody></table></div>
+<h3 id="cobranca-duplicatas-opcional">Cobrança (<code>duplicatas</code>, opcional)</h3>
+<p>Lista de parcelas com <code>numero</code> (<code>001</code>, <code>002</code>...), <code>vencimento</code> (<code>AAAA-MM-DD</code>) e <code>valor</code>. A soma das parcelas precisa ser igual ao total da nota.</p>
+<h3 id="pagamentos-pagamentos">Pagamentos (<code>pagamentos</code>)</h3>
+<div class="tabela"><table><thead><tr><th>Campo</th><th>Obr.</th><th>Observação</th></tr></thead><tbody><tr><td><code>forma</code></td><td>Sim</td><td>Código tPag: <code>01</code> dinheiro, <code>03</code> crédito, <code>04</code> débito, <code>15</code> boleto, <code>17</code> PIX, <code>90</code> sem pagamento, <code>99</code> outros</td></tr><tr><td><code>valor</code></td><td>Sim</td><td>2 casas</td></tr><tr><td><code>a_prazo</code></td><td>Não</td><td>true quando é a prazo</td></tr><tr><td><code>bandeira</code></td><td>Não</td><td>Cartão: <code>VISA</code>, <code>MASTERCARD</code>, <code>ELO</code>, <code>AMEX</code>, <code>HIPERCARD</code>...</td></tr><tr><td><code>autorizacao</code></td><td>Não</td><td>Cartão: código de autorização</td></tr></tbody></table></div>
+<p>A soma dos pagamentos precisa ser igual ao total da nota. A forma <code>90</code> (sem pagamento) vai sozinha, com valor 0. Lista vazia sai como à vista em dinheiro.</p>
+<h3 id="totais-para-conferencia-totais">Totais para conferência (<code>totais</code>)</h3>
+<p><code>valor_produtos</code>, <code>desconto</code>, <code>frete</code>, <code>seguro</code>, <code>outras</code>, <code>icms</code>, <code>icms_st</code>, <code>ipi</code>, <code>pis</code>, <code>cofins</code>, <code>ii</code> (Imposto de Importação, só na importação) e <code>total</code>. A TNK soma os itens e compara. Diferença acima de R$ 0,01 recusa a nota <b>antes</b> de gastar número, dizendo qual total não bate.</p>
+<h3 id="o-que-esta-versao-ainda-nao-faz">O que esta versão ainda não faz</h3>
+<ul><li>Venda para consumidor final não contribuinte de outra UF (DIFAL).</li><li>Venda presencial na NF-e: a nota sai como “não presencial”, sem intermediador (marketplace).</li><li>ICMS com CST 10, 30, 51 e 70, CSOSN 101, 201, 202 e 203, e base do ICMS por pauta ou margem.</li><li>Grupo de IBS/CBS do Simples Nacional, que aguarda a publicação do esquema da SEFAZ.</li></ul>
+<p>Se o seu cliente precisa de algum desses casos, avise a TNK antes da homologação.</p>
+<h2 id="comercio-exterior-importacao-e-exportacao">Comércio exterior (importação e exportação)</h2>
+<p>A mesma rota <code>POST /notas</code> emite a compra do exterior (CFOP 3xxx) e a venda para o exterior (CFOP 7xxx). O que muda: o destinatário vai em <code>estrangeiro</code>, a importação leva a declaração de importação e o Imposto de Importação em cada item, e a exportação leva o local de saída do país. A TNK confere a combinação antes de gastar número: destinatário no exterior só com CFOP 3xxx ou 7xxx (e o contrário), CFOP 3xxx só com <code>tipo_operacao</code> 0, CFOP 7xxx só com <code>tipo_operacao</code> 1, e cada grupo só no CFOP dele.</p>
+<h3 id="destinatario-no-exterior-destinatario-estrangeiro">Destinatário no exterior (<code>destinatario.estrangeiro</code>)</h3>
+<p>Vai no lugar de <code>cpf_cnpj</code>. Não mande <code>codigo_municipio_ibge</code>, <code>municipio</code>, <code>uf</code> nem <code>cep</code>: a nota sai com o município 9999999 &quot;EXTERIOR&quot; e a UF &quot;EX&quot;. O <code>bairro</code> é opcional, <code>contribuinte_icms</code> é sempre <code>9</code> e não vai <code>inscricao_estadual</code>.</p>
+<div class="tabela"><table><thead><tr><th>Campo</th><th>Obr.</th><th>Formato</th><th>Observação</th></tr></thead><tbody><tr><td><code>identificacao</code></td><td>Não</td><td>5 a 20 caracteres, sem espaço</td><td>Passaporte ou documento do país. Sem documento, mande vazio ou <code>ESTRANGEIRO</code></td></tr><tr><td><code>codigo_pais</code></td><td>Sim</td><td>1 a 4 dígitos</td><td>Código do país na tabela do BACEN. Ex.: <code>639</code> Argentina, <code>2496</code> Estados Unidos. <code>1058</code> (Brasil) é recusado</td></tr><tr><td><code>nome_pais</code></td><td>Sim</td><td>texto, 2 a 60</td><td><code>ARGENTINA</code></td></tr></tbody></table></div>
+<h3 id="importacao-cfop-3xxx">Importação (CFOP 3xxx)</h3>
+<p><code>tipo_operacao</code> = <code>0</code> (entrada). Cada item leva <code>di</code>, <code>ii</code> e <code>ipi</code> (sem IPI a pagar: <code>{&quot;cst&quot;: &quot;49&quot;}</code>). Sem eles a SEFAZ rejeita; a TNK recusa antes, sem gastar número. O valor do II soma no total da nota: <code>total</code> = produtos − desconto + frete + seguro + outras + ICMS-ST + IPI + II. Custos aduaneiros que entram na nota (taxa do Siscomex, AFRMM etc.) vão em <code>outras</code>. Informe também <code>totais.ii</code>.</p>
+<p>Declaração de importação (<code>itens[].di</code>, lista de 1 a 100):</p>
+<div class="tabela"><table><thead><tr><th>Campo</th><th>Obr.</th><th>Formato</th><th>Observação</th></tr></thead><tbody><tr><td><code>numero</code></td><td>Sim</td><td>até 15</td><td>Número da DI ou da DUIMP</td></tr><tr><td><code>data</code></td><td>Sim</td><td>AAAA-MM-DD</td><td>Data do registro</td></tr><tr><td><code>local_desembaraco</code></td><td>Sim</td><td>até 60</td><td><code>PORTO ALEGRE</code></td></tr><tr><td><code>uf_desembaraco</code></td><td>Sim</td><td>2 letras</td><td><code>RS</code></td></tr><tr><td><code>data_desembaraco</code></td><td>Sim</td><td>AAAA-MM-DD</td><td></td></tr><tr><td><code>via_transporte</code></td><td>Sim</td><td><code>1</code> a <code>13</code></td><td>1 marítima, 2 fluvial, 3 lacustre, 4 aérea, 5 postal, 6 ferroviária, 7 rodoviária, 8 conduto, 9 meios próprios, 10 entrada/saída ficta, 11 courier, 12 em mãos, 13 por reboque</td></tr><tr><td><code>valor_afrmm</code></td><td>Cond.</td><td>reais</td><td>Obrigatório na via marítima (<code>1</code>), mesmo que 0</td></tr><tr><td><code>intermedio</code></td><td>Sim</td><td><code>1</code>, <code>2</code> ou <code>3</code></td><td>1 = por conta própria, 2 = por conta e ordem, 3 = por encomenda</td></tr><tr><td><code>adquirente_cpf_cnpj</code></td><td>Cond.</td><td>11 ou 14 caracteres</td><td>Obrigatório nos tipos 2 e 3; não mande no tipo 1</td></tr><tr><td><code>adquirente_uf</code></td><td>Cond.</td><td>2 letras</td><td>Obrigatório nos tipos 2 e 3; não mande no tipo 1</td></tr><tr><td><code>codigo_exportador</code></td><td>Sim</td><td>até 60</td><td>Código do exportador estrangeiro no seu ERP</td></tr><tr><td><code>adicoes</code></td><td>Sim</td><td>lista, 1 a 999</td><td>Ver a tabela abaixo</td></tr></tbody></table></div>
+<p>Adição (<code>adicoes[]</code>):</p>
+<div class="tabela"><table><thead><tr><th>Campo</th><th>Obr.</th><th>Formato</th><th>Observação</th></tr></thead><tbody><tr><td><code>numero</code></td><td>Não</td><td>1 a 999</td><td>Número da adição</td></tr><tr><td><code>sequencial</code></td><td>Sim</td><td>1 a 99999</td><td>Sequência do item dentro da adição</td></tr><tr><td><code>codigo_fabricante</code></td><td>Sim</td><td>até 60</td><td>Código do fabricante no seu ERP</td></tr><tr><td><code>desconto</code></td><td>Não</td><td>reais</td><td>Desconto do item na DI</td></tr><tr><td><code>drawback</code></td><td>Não</td><td>até 20</td><td>Número do ato concessório de drawback</td></tr></tbody></table></div>
+<p>Imposto de Importação (<code>itens[].ii</code>). O grupo é obrigatório na importação; campo que não vier vale 0.</p>
+<div class="tabela"><table><thead><tr><th>Campo</th><th>Formato</th><th>Observação</th></tr></thead><tbody><tr><td><code>base</code></td><td>reais</td><td>Base de cálculo do II</td></tr><tr><td><code>despesas_aduaneiras</code></td><td>reais</td><td></td></tr><tr><td><code>valor</code></td><td>reais</td><td>Valor do II. Soma no total da nota</td></tr><tr><td><code>iof</code></td><td>reais</td><td>IOF da importação</td></tr></tbody></table></div>
+<h3 id="exportacao-cfop-7xxx">Exportação (CFOP 7xxx)</h3>
+<p><code>tipo_operacao</code> = <code>1</code> (saída). A nota leva o bloco <code>exportacao</code> (onde a mercadoria sai do país). Cada item pode levar a sua <code>exportacao</code>, com drawback e a exportação indireta.</p>
+<p>Exportação da nota (<code>exportacao</code>, no mesmo nível de <code>itens</code>):</p>
+<div class="tabela"><table><thead><tr><th>Campo</th><th>Obr.</th><th>Formato</th><th>Observação</th></tr></thead><tbody><tr><td><code>uf_saida</code></td><td>Sim</td><td>2 letras</td><td>UF de embarque ou de saída do país</td></tr><tr><td><code>local_exportacao</code></td><td>Sim</td><td>até 60</td><td>Porto, aeroporto ou fronteira</td></tr><tr><td><code>local_despacho</code></td><td>Não</td><td>até 60</td><td>Onde a mercadoria foi despachada</td></tr></tbody></table></div>
+<p>Exportação do item (<code>itens[].exportacao</code>, lista de até 500; cada uma com <code>drawback</code>, <code>indireta</code> ou os dois):</p>
+<div class="tabela"><table><thead><tr><th>Campo</th><th>Obr.</th><th>Formato</th><th>Observação</th></tr></thead><tbody><tr><td><code>drawback</code></td><td>Cond.</td><td>até 20</td><td>Número do ato concessório</td></tr><tr><td><code>indireta.registro_exportacao</code></td><td>Não</td><td>até 12 dígitos</td><td>Registro de exportação, se houver</td></tr><tr><td><code>indireta.chave_nfe</code></td><td>Cond.</td><td>44 caracteres</td><td>Chave da nota de remessa com fim específico de exportação que o seu cliente recebeu</td></tr><tr><td><code>indireta.quantidade</code></td><td>Cond.</td><td>até 4 casas</td><td>Quantidade exportada daquela remessa</td></tr></tbody></table></div>
+<p>A chave de <code>indireta.chave_nfe</code> entra sozinha nas notas referenciadas: não repita em <code>chave_referenciada</code>.</p>
+<h3 id="exemplo-destinatario-e-item-de-importacao">Exemplo: destinatário e item de importação</h3>
+<div class="codigo"><button type="button" class="copiar">Copiar</button><pre><code class="lingua-json">&quot;destinatario&quot;: {
+  &quot;estrangeiro&quot;: {&quot;identificacao&quot;: &quot;ESTRANGEIRO&quot;, &quot;codigo_pais&quot;: &quot;639&quot;, &quot;nome_pais&quot;: &quot;ARGENTINA&quot;},
+  &quot;nome&quot;: &quot;EXPORTADORA EXEMPLO S.A.&quot;,
+  &quot;contribuinte_icms&quot;: &quot;9&quot;,
+  &quot;logradouro&quot;: &quot;AV EXEMPLO 100&quot;
+},
+&quot;itens&quot;: [{
+  &quot;codigo&quot;: &quot;1000001&quot;,
+  &quot;descricao&quot;: &quot;Retalhos de couro bovino&quot;,
+  &quot;ncm&quot;: &quot;41079210&quot;,
+  &quot;cfop&quot;: &quot;3102&quot;,
+  &quot;unidade&quot;: &quot;KG&quot;,
+  &quot;quantidade&quot;: 100,
+  &quot;valor_unitario&quot;: 10.00,
+  &quot;valor_produto&quot;: 1000.00,
+  &quot;origem&quot;: &quot;1&quot;,
+  &quot;icms&quot;: {&quot;cst&quot;: &quot;00&quot;, &quot;base&quot;: 1180.00, &quot;aliquota&quot;: 17, &quot;valor&quot;: 200.60},
+  &quot;ipi&quot;: {&quot;cst&quot;: &quot;49&quot;},
+  &quot;pis&quot;: {&quot;cst&quot;: &quot;98&quot;},
+  &quot;cofins&quot;: {&quot;cst&quot;: &quot;98&quot;},
+  &quot;ii&quot;: {&quot;base&quot;: 1000.00, &quot;despesas_aduaneiras&quot;: 20.00, &quot;valor&quot;: 140.00},
+  &quot;di&quot;: [{
+    &quot;numero&quot;: &quot;2600000001&quot;,
+    &quot;data&quot;: &quot;2026-11-10&quot;,
+    &quot;local_desembaraco&quot;: &quot;PORTO ALEGRE&quot;,
+    &quot;uf_desembaraco&quot;: &quot;RS&quot;,
+    &quot;data_desembaraco&quot;: &quot;2026-11-11&quot;,
+    &quot;via_transporte&quot;: &quot;7&quot;,
+    &quot;intermedio&quot;: &quot;1&quot;,
+    &quot;codigo_exportador&quot;: &quot;279&quot;,
+    &quot;adicoes&quot;: [{&quot;numero&quot;: 1, &quot;sequencial&quot;: 1, &quot;codigo_fabricante&quot;: &quot;279&quot;}]
+  }]
+}],
+&quot;totais&quot;: {&quot;valor_produtos&quot;: 1000.00, &quot;icms&quot;: 200.60, &quot;ii&quot;: 140.00, &quot;total&quot;: 1140.00}</code></pre></div>
+<h3 id="exemplo-item-e-bloco-de-exportacao">Exemplo: item e bloco de exportação</h3>
+<div class="codigo"><button type="button" class="copiar">Copiar</button><pre><code class="lingua-json">&quot;itens&quot;: [{
+  &quot;codigo&quot;: &quot;1001&quot;,
+  &quot;descricao&quot;: &quot;Camiseta algodao M&quot;,
+  &quot;ncm&quot;: &quot;61091000&quot;,
+  &quot;cfop&quot;: &quot;7501&quot;,
+  &quot;unidade&quot;: &quot;UN&quot;,
+  &quot;quantidade&quot;: 2,
+  &quot;valor_unitario&quot;: 25.00,
+  &quot;valor_produto&quot;: 50.00,
+  &quot;origem&quot;: &quot;0&quot;,
+  &quot;icms&quot;: {&quot;cst&quot;: &quot;41&quot;},
+  &quot;pis&quot;: {&quot;cst&quot;: &quot;08&quot;},
+  &quot;cofins&quot;: {&quot;cst&quot;: &quot;08&quot;},
+  &quot;exportacao&quot;: [{&quot;indireta&quot;: {&quot;chave_nfe&quot;: &quot;43261111222333000181550780000000011695574132&quot;, &quot;quantidade&quot;: 2}}]
+}],
+&quot;exportacao&quot;: {&quot;uf_saida&quot;: &quot;RS&quot;, &quot;local_exportacao&quot;: &quot;PORTO ALEGRE&quot;, &quot;local_despacho&quot;: &quot;CAXIAS DO SUL&quot;}</code></pre></div>
+<h2 id="exemplo-de-envio">Exemplo de envio</h2>
+<p>Venda de um emitente do Simples Nacional para um consumidor da mesma UF. São dois itens, desconto no primeiro e pagamento por PIX. Os documentos são fictícios.</p>
+<div class="codigo"><button type="button" class="copiar">Copiar</button><pre><code class="lingua-json">{
+  &quot;id_integracao&quot;: &quot;PED-000123&quot;,
+  &quot;ambiente&quot;: &quot;homologacao&quot;,
+  &quot;serie&quot;: 1,
+  &quot;numero&quot;: 1532,
+  &quot;emitente&quot;: {
+    &quot;cnpj&quot;: &quot;11222333000181&quot;,
+    &quot;razao_social&quot;: &quot;LOJA EXEMPLO LTDA&quot;,
+    &quot;nome_fantasia&quot;: &quot;Loja Exemplo&quot;,
+    &quot;inscricao_estadual&quot;: &quot;201234567&quot;,
+    &quot;crt&quot;: &quot;1&quot;,
+    &quot;logradouro&quot;: &quot;Avenida Prudente de Morais&quot;,
+    &quot;numero&quot;: &quot;500&quot;,
+    &quot;bairro&quot;: &quot;Tirol&quot;,
+    &quot;codigo_municipio_ibge&quot;: &quot;2408102&quot;,
+    &quot;municipio&quot;: &quot;Natal&quot;,
+    &quot;uf&quot;: &quot;RN&quot;,
+    &quot;cep&quot;: &quot;59020400&quot;
+  },
+  &quot;natureza_operacao&quot;: &quot;Venda de mercadoria&quot;,
+  &quot;tipo_operacao&quot;: &quot;1&quot;,
+  &quot;finalidade&quot;: &quot;1&quot;,
+  &quot;consumidor_final&quot;: true,
+  &quot;destinatario&quot;: {
+    &quot;cpf_cnpj&quot;: &quot;12345678909&quot;,
+    &quot;nome&quot;: &quot;Maria da Silva&quot;,
+    &quot;contribuinte_icms&quot;: &quot;9&quot;,
+    &quot;logradouro&quot;: &quot;Rua das Flores&quot;,
+    &quot;numero&quot;: &quot;100&quot;,
+    &quot;bairro&quot;: &quot;Centro&quot;,
+    &quot;codigo_municipio_ibge&quot;: &quot;2408102&quot;,
+    &quot;municipio&quot;: &quot;Natal&quot;,
+    &quot;uf&quot;: &quot;RN&quot;,
+    &quot;cep&quot;: &quot;59000000&quot;,
+    &quot;email&quot;: &quot;maria@exemplo.com&quot;
+  },
+  &quot;itens&quot;: [
+    {
+      &quot;codigo&quot;: &quot;1001&quot;,
+      &quot;descricao&quot;: &quot;Camiseta algodão M&quot;,
+      &quot;codigo_barras&quot;: &quot;7891234567895&quot;,
+      &quot;ncm&quot;: &quot;61091000&quot;,
+      &quot;cfop&quot;: &quot;5102&quot;,
+      &quot;unidade&quot;: &quot;UN&quot;,
+      &quot;quantidade&quot;: 2,
+      &quot;valor_unitario&quot;: 25.00,
+      &quot;valor_produto&quot;: 50.00,
+      &quot;desconto&quot;: 5.00,
+      &quot;origem&quot;: &quot;0&quot;,
+      &quot;icms&quot;: { &quot;csosn&quot;: &quot;102&quot; },
+      &quot;pis&quot;: { &quot;cst&quot;: &quot;99&quot;, &quot;aliquota&quot;: 0, &quot;valor&quot;: 0 },
+      &quot;cofins&quot;: { &quot;cst&quot;: &quot;99&quot;, &quot;aliquota&quot;: 0, &quot;valor&quot;: 0 }
+    },
+    {
+      &quot;codigo&quot;: &quot;2002&quot;,
+      &quot;descricao&quot;: &quot;Boné aba curva&quot;,
+      &quot;ncm&quot;: &quot;65050090&quot;,
+      &quot;cfop&quot;: &quot;5102&quot;,
+      &quot;unidade&quot;: &quot;UN&quot;,
+      &quot;quantidade&quot;: 1,
+      &quot;valor_unitario&quot;: 30.00,
+      &quot;valor_produto&quot;: 30.00,
+      &quot;origem&quot;: &quot;0&quot;,
+      &quot;icms&quot;: { &quot;csosn&quot;: &quot;102&quot; },
+      &quot;pis&quot;: { &quot;cst&quot;: &quot;99&quot;, &quot;aliquota&quot;: 0, &quot;valor&quot;: 0 },
+      &quot;cofins&quot;: { &quot;cst&quot;: &quot;99&quot;, &quot;aliquota&quot;: 0, &quot;valor&quot;: 0 }
+    }
+  ],
+  &quot;transporte&quot;: { &quot;modalidade_frete&quot;: &quot;9&quot; },
+  &quot;pagamentos&quot;: [
+    { &quot;forma&quot;: &quot;17&quot;, &quot;valor&quot;: 75.00 }
+  ],
+  &quot;informacoes_complementares&quot;: &quot;Pedido 123 - vendedor João&quot;,
+  &quot;totais&quot;: {
+    &quot;valor_produtos&quot;: 80.00,
+    &quot;desconto&quot;: 5.00,
+    &quot;frete&quot;: 0, &quot;seguro&quot;: 0, &quot;outras&quot;: 0,
+    &quot;icms&quot;: 0, &quot;icms_st&quot;: 0, &quot;ipi&quot;: 0, &quot;pis&quot;: 0, &quot;cofins&quot;: 0,
+    &quot;total&quot;: 75.00
+  }
+}</code></pre></div>
+<h2 id="retorno">Retorno</h2>
+<p>Toda resposta sobre uma nota tem o mesmo formato. <b>Decida sempre pelo campo <code>situacao</code></b>, e não pelo código HTTP.</p>
+<div class="tabela"><table><thead><tr><th>Campo</th><th>Quando vem</th><th>O que é</th></tr></thead><tbody><tr><td><code>id_integracao</code></td><td>sempre</td><td>O id que você mandou</td></tr><tr><td><code>situacao</code></td><td>sempre</td><td><code>autorizada</code>, <code>rejeitada</code>, <code>denegada</code>, <code>em_processamento</code>, <code>cancelada</code> ou <code>inutilizada</code></td></tr><tr><td><code>codigo_status</code></td><td>sempre que a SEFAZ respondeu</td><td>cStat da SEFAZ (ex.: <code>100</code>)</td></tr><tr><td><code>motivo</code></td><td>sempre que a SEFAZ respondeu</td><td>xMotivo da SEFAZ, o texto que explica o código</td></tr><tr><td><code>chave</code></td><td>sempre</td><td>Chave de acesso, 44 dígitos</td></tr><tr><td><code>numero</code>, <code>serie</code></td><td>sempre</td><td>Número e série dados pela TNK</td></tr><tr><td><code>ambiente</code></td><td>sempre</td><td><code>producao</code> ou <code>homologacao</code></td></tr><tr><td><code>protocolo</code></td><td>autorizada, cancelada</td><td>nProt da SEFAZ, 15 dígitos</td></tr><tr><td><code>autorizado_em</code></td><td>autorizada</td><td>Data e hora do recebimento na SEFAZ (dhRecbto)</td></tr><tr><td><code>xml_autorizado</code></td><td>autorizada</td><td>XML completo (procNFe) em Base64. Guarde: a lei exige 5 anos</td></tr><tr><td><code>links.xml</code>, <code>links.danfe</code></td><td>autorizada</td><td>Caminhos para baixar o XML e o PDF depois</td></tr><tr><td><code>eventos</code></td><td>quando houver</td><td>Cancelamento e cartas de correção: <code>tipo</code>, <code>sequencia</code>, <code>codigo_status</code>, <code>motivo</code>, <code>protocolo</code>, <code>registrado_em</code></td></tr></tbody></table></div>
+<h3 id="o-que-fazer-em-cada-situacao">O que fazer em cada situação</h3>
+<div class="tabela"><table><thead><tr><th>Situação</th><th>Significado</th><th>O que o seu ERP faz</th></tr></thead><tbody><tr><td><code>autorizada</code></td><td>A nota vale (cStat 100 ou 150)</td><td>Guardar chave, protocolo e XML, e liberar o DANFE</td></tr><tr><td><code>rejeitada</code></td><td>Erro de preenchimento. O número não foi usado</td><td>Mostrar o <code>motivo</code>, corrigir e enviar <code>PUT /notas/{ref}</code>. Se desistir, inutilizar o número</td></tr><tr><td><code>denegada</code></td><td>Irregularidade cadastral do emitente ou do destinatário (cStat 110, 301, 302, 303)</td><td>Não reenviar. O número fica queimado. Verificar o cadastro na SEFAZ</td></tr><tr><td><code>em_processamento</code></td><td>A SEFAZ não respondeu a tempo</td><td><b>Não enviar de novo com outro id.</b> Consultar <code>GET /notas/{ref}</code> em alguns minutos. A TNK também consulta e reenvia sozinha</td></tr><tr><td><code>cancelada</code></td><td>Cancelamento homologado</td><td>Tratar a venda como cancelada. O codigo_status e o motivo continuam os da autorização; o resultado do cancelamento está em eventos</td></tr><tr><td><code>inutilizada</code></td><td>Número inutilizado</td><td>Nada a fazer</td></tr></tbody></table></div>
+<h3 id="codigos-http">Códigos HTTP</h3>
+<div class="tabela"><table><thead><tr><th>Código</th><th>Quando</th></tr></thead><tbody><tr><td>200</td><td>A SEFAZ respondeu. Veja a <code>situacao</code> (pode ser <code>rejeitada</code>)</td></tr><tr><td>202</td><td>Em processamento</td></tr><tr><td>400</td><td>JSON mal formado</td></tr><tr><td>401</td><td>Chave de acesso ausente, errada ou desligada</td></tr><tr><td>404</td><td>Nota não encontrada para este CNPJ</td></tr><tr><td>409</td><td><code>id_integracao</code> já usado com dados diferentes, número já usado nesta série, ou a operação não cabe na situação da nota (ex.: cancelar nota rejeitada)</td></tr><tr><td>422</td><td>Erro de preenchimento achado pela TNK <b>antes</b> de ir à SEFAZ. Nenhum número foi gasto. Vem com a lista <code>erros</code></td></tr><tr><td>429</td><td>Muitas chamadas. Espere e tente de novo</td></tr><tr><td>500 / 503</td><td>Erro interno ou SEFAZ fora do ar. Vem com o <code>id_ocorrencia</code>. Consulte antes de reenviar</td></tr></tbody></table></div>
+<p>Também podem vir: <b>403</b> quando o <code>emitente.cnpj</code> não é o CNPJ da chave usada, ou quando a licença do TNK Emissor venceu (o campo <code>erro</code> diz o que fazer; nesse caso só emitir e reenviar ficam bloqueados, e consultar, baixar XML e DANFE, cancelar, carta de correção e inutilizar continuam); <b>411</b> quando falta o cabeçalho <code>Content-Length</code>; <b>413</b> quando o corpo passa de 2 MB.</p>
+<h3 id="exemplo-autorizada-200">Exemplo: autorizada (200)</h3>
+<div class="codigo"><button type="button" class="copiar">Copiar</button><pre><code class="lingua-json">{
+  &quot;id_integracao&quot;: &quot;PED-000123&quot;,
+  &quot;situacao&quot;: &quot;autorizada&quot;,
+  &quot;codigo_status&quot;: &quot;100&quot;,
+  &quot;motivo&quot;: &quot;Autorizado o uso da NF-e&quot;,
+  &quot;chave&quot;: &quot;24261111222333000181550100000000151234567890&quot;,
+  &quot;numero&quot;: 15,
+  &quot;serie&quot;: 10,
+  &quot;ambiente&quot;: &quot;homologacao&quot;,
+  &quot;protocolo&quot;: &quot;124260000012345&quot;,
+  &quot;autorizado_em&quot;: &quot;2026-11-23T14:30:05-03:00&quot;,
+  &quot;xml_autorizado&quot;: &quot;PD94bWwgdmVyc2lvbj0iMS4wIi...&quot;,
+  &quot;links&quot;: {
+    &quot;xml&quot;: &quot;/integracao/v1/notas/24261111222333000181550100000000151234567890/xml&quot;,
+    &quot;danfe&quot;: &quot;/integracao/v1/notas/24261111222333000181550100000000151234567890/danfe&quot;
+  },
+  &quot;eventos&quot;: []
+}</code></pre></div>
+<h3 id="exemplo-rejeitada-pela-sefaz-200">Exemplo: rejeitada pela SEFAZ (200)</h3>
+<div class="codigo"><button type="button" class="copiar">Copiar</button><pre><code class="lingua-json">{
+  &quot;id_integracao&quot;: &quot;PED-000124&quot;,
+  &quot;situacao&quot;: &quot;rejeitada&quot;,
+  &quot;codigo_status&quot;: &quot;778&quot;,
+  &quot;motivo&quot;: &quot;Rejeicao: Informado NCM inexistente [nItem:1]&quot;,
+  &quot;chave&quot;: &quot;24261111222333000181550100000000161234567891&quot;,
+  &quot;numero&quot;: 16,
+  &quot;serie&quot;: 10,
+  &quot;ambiente&quot;: &quot;homologacao&quot;
+}</code></pre></div>
+<h3 id="exemplo-erro-de-preenchimento-422">Exemplo: erro de preenchimento (422)</h3>
+<div class="codigo"><button type="button" class="copiar">Copiar</button><pre><code class="lingua-json">{
+  &quot;erro&quot;: &quot;A nota tem campos com problema e não foi enviada.&quot;,
+  &quot;erros&quot;: [
+    { &quot;campo&quot;: &quot;itens[0].ncm&quot;, &quot;mensagem&quot;: &quot;NCM precisa ter 8 dígitos.&quot; },
+    { &quot;campo&quot;: &quot;totais.total&quot;, &quot;mensagem&quot;: &quot;Os itens somam 75,00 e o total informado é 80,00.&quot; }
+  ]
+}</code></pre></div>
+<h2 id="depois-da-emissao-consulta-correcao-cancelamento-e-inutilizacao">Depois da emissão: consulta, correção, cancelamento e inutilização</h2>
+<p>Todas estas chamadas devolvem a nota no mesmo formato do retorno, já com o evento novo na lista <code>eventos</code>.</p>
+<div class="tabela"><table><thead><tr><th>Ação</th><th>Chamada</th><th>Corpo</th><th>Regras</th></tr></thead><tbody><tr><td>Consultar</td><td><code>GET /notas/{ref}</code></td><td>—</td><td>Devolve o que está gravado. Com <code>?atualizar=1</code>, pergunta à SEFAZ antes. Use em <code>em_processamento</code></td></tr><tr><td>Corrigir rejeitada</td><td><code>PUT /notas/{ref}</code></td><td>O mesmo JSON do envio, corrigido</td><td>Só quando a situação é <code>rejeitada</code>. O <code>id_integracao</code>, a chave e a data de emissão continuam as mesmas: ambiente, série, número e UF do emitente não podem mudar (volta 409). Para outro número, mande uma nota nova e inutilize este</td></tr><tr><td>Cancelar</td><td><code>POST /notas/{ref}/cancelar</code></td><td><code>{&quot;justificativa&quot;: &quot;...&quot;}</code> (15 a 255 caracteres)</td><td>Só nota <code>autorizada</code>, dentro do prazo da SEFAZ (em geral 24 horas). Fora do prazo, a SEFAZ rejeita e o <code>motivo</code> diz por quê</td></tr><tr><td>Carta de correção</td><td><code>POST /notas/{ref}/carta-de-correcao</code></td><td><code>{&quot;texto&quot;: &quot;...&quot;}</code> (15 a 1000 caracteres)</td><td>Só nota <code>autorizada</code>. Não corrige valor, imposto, quantidade, destinatário nem data. Cada nova carta substitui a anterior (até 20)</td></tr><tr><td>Inutilizar</td><td><code>POST /notas/{ref}/inutilizar</code></td><td><code class="longo">{&quot;justificativa&quot;: &quot;...&quot;} (15 a 255 caracteres)</code></td><td>Só nota rejeitada que você desistiu de corrigir. Antes, a TNK confere na SEFAZ que a nota não existe lá</td></tr><tr><td>Inutilizar faixa pulada</td><td><code>POST /inutilizar</code></td><td><code class="longo">{&quot;ambiente&quot;: &quot;producao&quot;, &quot;serie&quot;: 1, &quot;inicio&quot;: 1540, &quot;fim&quot;: 1542, &quot;justificativa&quot;: &quot;...&quot;}</code></td><td>Números que o seu ERP pulou e nunca mandou à TNK. Se a faixa tiver número de nota enviada por esta API, volta 409: use a inutilização da nota. A resposta traz situacao (inutilizada ou rejeitada), codigo_status, motivo e protocolo</td></tr><tr><td>Enviar certificado</td><td><code>PUT /certificado</code></td><td><code class="longo">{&quot;arquivo_base64&quot;: &quot;...&quot;, &quot;senha&quot;: &quot;...&quot;}</code></td><td>O .pfx do CNPJ da chave, em Base64. Recusado (422) se a senha estiver errada, se estiver vencido ou se for de outro CNPJ. A resposta traz só titular, cnpj e valido_ate</td></tr><tr><td>Baixar XML</td><td><code>GET /notas/{ref}/xml</code></td><td>—</td><td><code>application/xml</code>. Nota autorizada ou cancelada</td></tr><tr><td>Baixar DANFE</td><td><code>GET /notas/{ref}/danfe</code></td><td>—</td><td><code>application/pdf</code></td></tr></tbody></table></div>
+<p><b>Nunca emita a mesma venda com outro <code>id_integracao</code> porque a primeira tentativa não respondeu.</b> Consulte pelo id original. O mesmo id nunca gera duas notas.</p>
+<h2 id="homologacao-e-rejeicoes-comuns">Homologação e rejeições comuns</h2>
+<p>Mande ambiente producao só depois que estes casos passarem em homologação. Teste numa série que não vai usar em produção (ex.: 99), porque os dois ambientes dividem a numeração de cada série. Em homologação, a SEFAZ troca o nome do destinatário e a descrição do primeiro item por um texto padrão. Isso é normal.</p>
+<ol class="passos"><li><code>GET /status</code>?ambiente=homologacao responde com a SEFAZ no ar e o certificado válido, depois de enviar o certificado pelo PUT /certificado.</li><li>Venda simples autorizada, com o XML e o DANFE baixados.</li><li>Mesmo <code>id_integracao</code> enviado de novo: volta a mesma nota, sem número novo.</li><li>Outra nota com um número já usado na série: volta 409, sem ir à SEFAZ.</li><li>Nota com erro de preenchimento: volta 422 e nenhum número é gasto.</li><li>Nota rejeitada pela SEFAZ, corrigida pelo <code>PUT</code> e autorizada com o mesmo número.</li><li>Carta de correção registrada.</li><li>Cancelamento homologado.</li><li>Inutilização do número de uma rejeitada e de uma faixa pulada.</li><li>Devolução (finalidade 4) referenciando uma nota autorizada.</li><li>Venda para outra UF e venda com destinatário contribuinte (com IE), se o seu cliente fizer essas operações.</li></ol>
+<h3 id="rejeicoes-mais-comuns">Rejeições mais comuns</h3>
+<div class="tabela"><table><thead><tr><th>cStat</th><th>O que significa</th><th>Como resolver</th></tr></thead><tbody><tr><td>204 / 539</td><td>Duplicidade de NF-e</td><td>204: a nota já existe na SEFAZ, consulte pelo id_integracao. 539: o número já foi usado na SEFAZ com outra chave (por outro sistema); mande uma nota nova, com outro número e outro <code>id_integracao</code></td></tr><tr><td>213</td><td>CNPJ do emitente diferente do certificado</td><td>Envie pelo PUT /certificado o certificado deste CNPJ</td></tr><tr><td>225</td><td>Falha no schema do XML</td><td>Fale com a TNK, mandando o <code>id_integracao</code></td></tr><tr><td>232 / 233</td><td>IE do destinatário não informada ou não cadastrada</td><td>Conferir <code>contribuinte_icms</code> e <code>inscricao_estadual</code></td></tr><tr><td>301 / 302</td><td>Uso denegado: irregularidade do emitente ou do destinatário</td><td>Situação cadastral na SEFAZ. A nota fica <code>denegada</code></td></tr><tr><td>610</td><td>Total da nota diferente da soma dos itens</td><td>Conferir descontos, frete e impostos de cada item</td></tr><tr><td>629</td><td>Valor do produto diferente de quantidade × valor unitário</td><td>Conferir <code>valor_produto</code></td></tr><tr><td>694</td><td>Falta o grupo do ICMS da UF de destino (DIFAL)</td><td>Venda para consumidor final de outra UF: ainda não suportada</td></tr><tr><td>778</td><td>NCM inexistente</td><td>Corrigir o NCM do produto</td></tr><tr><td>806</td><td>Operação com ST sem CEST</td><td>Informar o <code>cest</code> do item</td></tr></tbody></table></div>
+<p>Os demais códigos estão no Manual de Orientação do Contribuinte da NF-e. O <code>motivo</code> sempre traz o texto da SEFAZ.</p>
+    </article>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    TNK System — TNK Emissor<br>
+    Suporte: <a href="mailto:suporte@tnksystem.com.br">suporte@tnksystem.com.br</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // Copiar o exemplo.
+  document.querySelectorAll('.copiar').forEach(function (botao) {
+    botao.addEventListener('click', function () {
+      var texto = botao.parentNode.querySelector('code').textContent;
+      if (!navigator.clipboard) return;
+      navigator.clipboard.writeText(texto).then(function () {
+        botao.textContent = 'Copiado';
+        setTimeout(function () { botao.textContent = 'Copiar'; }, 1500);
+      });
+    });
+  });
+
+  // No celular o sumário começa fechado.
+  if (window.matchMedia('(max-width:900px)').matches) {
+    document.getElementById('sumario').removeAttribute('open');
+  }
+
+  // Marca no sumário a seção que está na tela.
+  var links = {};
+  document.querySelectorAll('nav.sumario a').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  if (!('IntersectionObserver' in window)) return;
+  var atual = null;
+  var vigia = new IntersectionObserver(function (entradas) {
+    entradas.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      if (atual) atual.classList.remove('ativo');
+      atual = links[e.target.id];
+      if (atual) atual.classList.add('ativo');
+    });
+  }, { rootMargin: '0px 0px -75% 0px' });
+  document.querySelectorAll('article h2[id], article h3[id]').forEach(function (h) { vigia.observe(h); });
+})();
+</script>
+
+</body>
+</html>
